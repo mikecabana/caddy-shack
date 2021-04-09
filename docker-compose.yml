@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+    caddy:
+        image: caddy:alpine
+        restart: unless-stopped
+        ports:
+            - 80:80
+            - 443:443
+            - 2019:2019
+        expose:
+            - 2019
+        volumes:
+            - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+            - ./caddy/config:/config
+            - ./caddy/data:/data
+
+    caddy-api:
+        build:
+            context: ./caddy-api
+            target: development
+        volumes:
+            - ./caddy-api:/usr/src/app
+            - /usr/src/app/node_modules
+        ports:
+            - 5000:5000
+            - 9229:9229
+        expose:
+            - 5000
+        command: npm run start:debug
+        environment:
+            - PORT=5000
+
+    caddy-client:
+        build:
+            context: ./caddy-client
+            target: deps
+            # dockerfile: caddy-client/Dockerfile
+        stdin_open: true
+        restart: always
+        ports:
+            - 3000:3000
+        command: npm run dev
+        # env_file:
+        #     - .env.docker
+        #     - .env
+        volumes:
+            - ./caddy-client:/app
+            - /app/node_modules
+            - /app/.next
